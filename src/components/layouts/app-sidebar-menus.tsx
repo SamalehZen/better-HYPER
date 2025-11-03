@@ -32,7 +32,7 @@ import { getIsUserAdmin } from "lib/user/utils";
 import { BasicUser } from "app-types/user";
 import { AppSidebarAdmin } from "./app-sidebar-menu-admin";
 
-export function AppSidebarMenus({ user }: { user?: BasicUser }) {
+export function AppSidebarMenus({ user }: { user?: Partial<BasicUser> }) {
   const router = useRouter();
   const t = useTranslations("");
   const { setOpenMobile } = useSidebar();

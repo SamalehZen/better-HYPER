@@ -15,7 +15,7 @@ import { BasicUser } from "app-types/user";
 export function AppSidebar({
   user,
 }: {
-  user?: BasicUser;
+  user?: Partial<BasicUser>;
 }) {
   const userRole = user?.role;
   const router = useRouter();
