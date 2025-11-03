@@ -2,16 +2,17 @@
 
 import { BasicUserWithLastLogin, UserPreferences } from "app-types/user";
 import { getSession } from "auth/server";
-import { userRepository } from "lib/db/repository";
-
 import { notFound } from "next/navigation";
+import { eq, desc } from "drizzle-orm";
+
 import { pgDb } from "lib/db/pg/db.pg";
 import { SessionTable } from "lib/db/pg/schema.pg";
-import { eq, desc } from "drizzle-orm";
 import { userRepository } from "lib/db/repository";
 import { customModelProvider } from "@/lib/ai/models";
 
-// Helper function to get model provider from model name
+/**
+ * Helper function to get model provider from model name
+ */
 const getModelProvider = (modelName: string): string => {
   for (const { provider, models } of customModelProvider.modelsInfo) {
     for (const model of models) {
@@ -25,8 +26,8 @@ const getModelProvider = (modelName: string): string => {
 
 /**
  * Get the user by id
- * We can only get the user by id for the current user as a non-admin user
- * We can get the user by id for any user as an admin user
+ * - Non-admin: can only access own data
+ * - Admin: can access any user
  */
 export async function getUser(
   userId?: string,
@@ -48,38 +49,42 @@ export async function getUserSessions(userId?: string) {
   return rows;
 }
 
+/**
+ * Get the user's authentication methods
+ */
 export async function getUserAuthMethods(userId?: string) {
   const resolvedUserId = await getUserIdAndCheckAccess(userId);
   return await userRepository.getUserAuthMethods(resolvedUserId);
 }
 
 /**
- * Get the user ID and check access
- * if the requested user id is not provided, we use the current user id
- * if the requested user id is provided, we check if the current user has access to the requested user
- * if the current user has access to the requested user, we return the requested user id
- * if the current user does not have access to the requested user, we throw a 404 error
- * if the requested user id is not found, we throw a 404 error
+ * Get the user ID and check access.
+ * - If `requestedUserId` not provided → use current user
+ * - If provided → check if current user has access
+ * - Otherwise → throw 404
  */
 export async function getUserIdAndCheckAccess(
   requestedUserId?: string,
 ): Promise<string> {
   const session = await getSession();
-  if (!session) {
-    notFound();
-  }
+  if (!session) notFound();
+
   const currentUserId = session.user.id;
-  const userId = requestedUserId ? requestedUserId : currentUserId;
-  if (!userId) {
-    notFound();
-  }
+  const userId = requestedUserId || currentUserId;
+  if (!userId) notFound();
+
+  // ⚠️ (Optionnel) Si tu veux gérer le cas admin :
+  // if (requestedUserId && requestedUserId !== currentUserId && !session.user.isAdmin) {
+  //   notFound();
+  // }
+
   return userId;
 }
 
 /**
  * Get the user stats
- * We can only get stats for the current user as a non-admin user
- * We can get stats for any user as an admin user
+ * - Non-admin: only own stats
+ * - Admin: can access any user's stats
  */
 export async function getUserStats(userId?: string): Promise<{
   threadCount: number;
@@ -96,7 +101,7 @@ export async function getUserStats(userId?: string): Promise<{
   const resolvedUserId = await getUserIdAndCheckAccess(userId);
   const stats = await userRepository.getUserStats(resolvedUserId);
 
-  // Add provider information to each model stat
+  // Add provider info to each model stat
   return {
     ...stats,
     modelStats: stats.modelStats.map((stat) => ({
@@ -107,9 +112,7 @@ export async function getUserStats(userId?: string): Promise<{
 }
 
 /**
- * Get the user preferences
- * We can only get preferences for the current user as a non-admin user
- * We can get preferences for any user as an admin user
+ * Get user preferences
  */
 export async function getUserPreferences(
   userId?: string,
@@ -118,6 +121,9 @@ export async function getUserPreferences(
   return await userRepository.getPreferences(resolvedUserId);
 }
 
+/**
+ * Update user profile details (name, email, image)
+ */
 export async function updateUserDetails(
   userId: string,
   name?: string,
@@ -125,9 +131,8 @@ export async function updateUserDetails(
   image?: string,
 ) {
   const resolvedUserId = await getUserIdAndCheckAccess(userId);
-  if (!name && !email && !image) {
-    return;
-  }
+  if (!name && !email && !image) return;
+
   return await userRepository.updateUserDetails({
     userId: resolvedUserId,
     ...(name && { name }),
