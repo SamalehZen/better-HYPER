@@ -1,5 +1,5 @@
 import { notFound, redirect, unauthorized } from "next/navigation";
-import { getUser } from "lib/user/server";
+import { getUser, getUserAuthMethods } from "lib/user/server";
 import { UserDetail } from "@/components/user/user-detail/user-detail";
 import {
   UserStatsCardLoader,
@@ -26,10 +26,7 @@ export default async function UserDetailPage({ params }: PageProps) {
     redirect("/login");
   }
   const user = await getUser(id);
-  const userAccountInfo = {
-    hasPassword: !!user?.password,
-    oauthProviders: [] as string[],
-  };
+  const userAccountInfo = await getUserAuthMethods(id);
 
   if (!user) {
     notFound();

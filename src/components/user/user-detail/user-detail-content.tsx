@@ -1,4 +1,8 @@
-import { getUser, getUserIdAndCheckAccess } from "lib/user/server";
+import {
+  getUser,
+  getUserIdAndCheckAccess,
+  getUserAuthMethods,
+} from "lib/user/server";
 import { notFound } from "next/navigation";
 import { UserDetail } from "./user-detail";
 import {
@@ -17,10 +21,7 @@ export async function UserDetailContent({
   const currentUserId = await getUserIdAndCheckAccess(userId);
 
   const user = await getUser(userId);
-  const userAccounts = {
-    hasPassword: !!user?.password,
-    oauthProviders: [] as string[],
-  };
+  const userAccounts = await getUserAuthMethods(userId);
 
   if (!user) {
     notFound();

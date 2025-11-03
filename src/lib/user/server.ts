@@ -8,6 +8,7 @@ import { notFound } from "next/navigation";
 import { pgDb } from "lib/db/pg/db.pg";
 import { SessionTable } from "lib/db/pg/schema.pg";
 import { eq, desc } from "drizzle-orm";
+import { userRepository } from "lib/db/repository";
 import { customModelProvider } from "@/lib/ai/models";
 
 // Helper function to get model provider from model name
@@ -45,6 +46,11 @@ export async function getUserSessions(userId?: string) {
     .where(eq(SessionTable.userId, resolvedUserId))
     .orderBy(desc(SessionTable.createdAt));
   return rows;
+}
+
+export async function getUserAuthMethods(userId?: string) {
+  const resolvedUserId = await getUserIdAndCheckAccess(userId);
+  return await userRepository.getUserAuthMethods(resolvedUserId);
 }
 
 /**
