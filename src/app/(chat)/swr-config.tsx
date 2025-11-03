@@ -1,6 +1,7 @@
 "use client";
 
 import { BasicUser } from "app-types/user";
+
 import { useEffect, useMemo } from "react";
 import { SWRConfig, SWRConfiguration } from "swr";
 
@@ -9,7 +10,7 @@ export function SWRConfigProvider({
   user,
 }: {
   children: React.ReactNode;
-  user?: BasicUser;
+  user?: Partial<BasicUser>;
 }) {
   const config = useMemo<SWRConfiguration>(() => {
     return {
