@@ -32,7 +32,7 @@ const LightRays = dynamic(() => import("@/components/ui/light-rays"), {
 
 interface MCPDashboardProps {
   message?: string;
-  user: BasicUser;
+  user: Partial<BasicUser>;
 }
 
 export default function MCPDashboard({ message, user }: MCPDashboardProps) {

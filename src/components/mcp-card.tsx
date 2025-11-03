@@ -53,7 +53,7 @@ export const MCPCard = memo(function MCPCard({
   user,
   userName,
   userAvatar,
-}: MCPServerInfo & { user: BasicUser }) {
+}: MCPServerInfo & { user: Partial<BasicUser> }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [visibilityChangeLoading, setVisibilityChangeLoading] = useState(false);
   const t = useTranslations("MCP");
