@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getSessionByToken } from "@/lib/auth/local-auth";
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -27,20 +26,8 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/sign-in", req.url));
   }
 
-  const session = await getSessionByToken(sessionToken);
-
-  if (!session || session.expiresAt < new Date()) {
-    const response = NextResponse.redirect(new URL("/sign-in", req.url));
-    response.cookies.delete("session_token");
-    return response;
-  }
-
-  if (session.user.banned) {
-    const response = NextResponse.redirect(
-      new URL("/sign-in?error=banned", req.url),
-    );
-    return response;
-  }
+  // Edge runtime: do not touch database here. Cookie presence is enough.
+  // Detailed validation (expiry/ban) is performed on server routes/pages.
 
   return NextResponse.next();
 }

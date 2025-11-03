@@ -1,3 +1,4 @@
+export const runtime = "nodejs";
 // import { Logger } from "drizzle-orm";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 

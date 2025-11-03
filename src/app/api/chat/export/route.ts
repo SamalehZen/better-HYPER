@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { ChatExportByThreadIdSchema } from "app-types/chat-export";
 import { getSession } from "auth/server";
 import { chatExportRepository, chatRepository } from "lib/db/repository";

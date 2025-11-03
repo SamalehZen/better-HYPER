@@ -1,4 +1,5 @@
 import "server-only";
+export const runtime = "nodejs";
 import { hash as bcryptHash, compare as bcryptCompare } from "bcrypt-ts";
 import { cookies } from "next/headers";
 import { pgDb } from "lib/db/pg/db.pg";
