@@ -1,7 +1,6 @@
 import { McpServerCustomizationsPrompt, MCPToolInfo } from "app-types/mcp";
 
 import { UserPreferences } from "app-types/user";
-import { User } from "better-auth";
 import { createMCPToolId } from "./mcp/mcp-tool-id";
 import { format } from "date-fns";
 import { Agent } from "app-types/agent";
@@ -49,7 +48,7 @@ CRITICAL: Generate all output content in the same language as the user's request
 };
 
 export const buildUserSystemPrompt = (
-  user?: User,
+  user?: { id?: string; name?: string | null; email?: string | null },
   userPreferences?: UserPreferences,
   agent?: Agent,
 ) => {
@@ -133,7 +132,7 @@ ${userPreferences.responseStyleExample}
 };
 
 export const buildSpeechSystemPrompt = (
-  user: User,
+  user: { id?: string; name?: string | null; email?: string | null },
   userPreferences?: UserPreferences,
   agent?: Agent,
 ) => {

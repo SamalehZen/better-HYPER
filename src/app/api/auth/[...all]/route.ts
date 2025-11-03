@@ -1,4 +1,7 @@
-import { auth } from "auth/server";
-import { toNextJsHandler } from "better-auth/next-js";
+export async function GET() {
+  return new Response("Not Found", { status: 404 });
+}
 
-export const { GET, POST } = toNextJsHandler(auth.handler);
+export async function POST() {
+  return new Response("Not Found", { status: 404 });
+}

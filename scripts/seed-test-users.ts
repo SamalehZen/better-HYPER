@@ -18,7 +18,7 @@ if (process.env.CI) {
   config();
 }
 
-import { auth } from "auth/auth-instance";
+import { createUser } from "auth/server";
 import { USER_ROLES } from "app-types/roles";
 import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -132,7 +132,7 @@ async function clearExistingTestUsers() {
   }
 }
 
-async function createUserWithBetterAuth(userData: {
+async function createLocalUser(userData: {
   email: string;
   password: string;
   name: string;
@@ -151,23 +151,12 @@ async function createUserWithBetterAuth(userData: {
       );
       user = existingUser;
     } else {
-      // Use Better Auth's signUp API to create user with proper password hashing
-      const result = await auth.api.signUpEmail({
-        body: {
-          email: userData.email,
-          password: userData.password,
-          name: userData.name,
-        },
-        headers: new Headers({
-          "content-type": "application/json",
-        }),
+      const created = await createUser({
+        email: userData.email,
+        password: userData.password,
+        name: userData.name,
       });
-
-      if (!result.user) {
-        throw new Error("User creation failed");
-      }
-
-      user = result.user;
+      user = created;
       console.log(`  Created new user ${userData.email} (ID: ${user.id})`);
     }
 
@@ -244,7 +233,7 @@ async function createUserWithBetterAuth(userData: {
 }
 
 async function seedTestUsers() {
-  console.log("🌱 Starting test user seeding using Better Auth APIs...");
+  console.log("🌱 Starting test user seeding using local auth...");
 
   try {
     // Clear existing test users first
@@ -254,7 +243,7 @@ async function seedTestUsers() {
     console.log("👤 Creating main test users...");
 
     // 1. Admin User
-    const adminUser = await createUserWithBetterAuth({
+    const adminUser = await createLocalUser({
       email: TEST_USERS.admin.email,
       password: TEST_USERS.admin.password,
       name: TEST_USERS.admin.name,
@@ -263,7 +252,7 @@ async function seedTestUsers() {
     console.log("✅ Created admin user:", adminUser?.id);
 
     // 2. Editor User
-    const editorUser = await createUserWithBetterAuth({
+    const editorUser = await createLocalUser({
       email: TEST_USERS.editor.email,
       password: TEST_USERS.editor.password,
       name: TEST_USERS.editor.name,
@@ -272,7 +261,7 @@ async function seedTestUsers() {
     console.log("✅ Created editor user:", editorUser?.id);
 
     // 3. Editor2 User
-    const editor2User = await createUserWithBetterAuth({
+    const editor2User = await createLocalUser({
       email: TEST_USERS.editor2.email,
       password: TEST_USERS.editor2.password,
       name: TEST_USERS.editor2.name,
@@ -281,7 +270,7 @@ async function seedTestUsers() {
     console.log("✅ Created editor2 user:", editor2User?.id);
 
     // 4. Regular User
-    const regularUser = await createUserWithBetterAuth({
+    const regularUser = await createLocalUser({
       email: TEST_USERS.regular.email,
       password: TEST_USERS.regular.password,
       name: TEST_USERS.regular.name,
@@ -299,7 +288,7 @@ async function seedTestUsers() {
         const isBanned = i === 21;
         const email = `testuser${i}@test-seed.local`;
 
-        await createUserWithBetterAuth({
+        await createLocalUser({
           email,
           password: `TestPass${i}!`,
           name: `Test User ${i}`,

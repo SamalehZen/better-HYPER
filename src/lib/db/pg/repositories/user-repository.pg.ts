@@ -6,7 +6,6 @@ import {
 } from "app-types/user";
 import { pgDb as db, pgDb } from "../db.pg";
 import {
-  AccountTable,
   ChatMessageTable,
   ChatThreadTable,
   SessionTable,
@@ -163,18 +162,14 @@ export const pgUserRepository: UserRepository = {
     };
   },
   getUserAuthMethods: async (userId: string) => {
-    const accounts = await pgDb
-      .select({
-        providerId: AccountTable.providerId,
-      })
-      .from(AccountTable)
-      .where(eq(AccountTable.userId, userId));
+    const [row] = await pgDb
+      .select({ password: UserTable.password })
+      .from(UserTable)
+      .where(eq(UserTable.id, userId));
 
     return {
-      hasPassword: accounts.some((a) => a.providerId === "credential"),
-      oauthProviders: accounts
-        .filter((a) => a.providerId !== "credential")
-        .map((a) => a.providerId),
+      hasPassword: !!row?.password,
+      oauthProviders: [],
     };
   },
 };

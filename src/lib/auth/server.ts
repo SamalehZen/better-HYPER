@@ -1,4 +1,13 @@
 import "server-only";
-
-// Re-export everything from auth-instance
-export { auth, getSession, getIsFirstUser } from "./auth-instance";
+export {
+  getSession,
+  getIsFirstUser,
+  createSession,
+  deleteSession,
+  deleteAllUserSessions,
+  signIn,
+  signOut,
+  createUser,
+  hashPassword,
+  verifyPassword,
+} from "./local-auth";

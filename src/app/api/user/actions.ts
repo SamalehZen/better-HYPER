@@ -4,8 +4,14 @@ import {
   validatedActionWithAdminPermission,
   validatedActionWithUserManagePermission,
 } from "lib/action-utils";
-import { headers } from "next/headers";
-import { auth } from "auth/server";
+import { pgDb } from "lib/db/pg/db.pg";
+import { UserTable } from "lib/db/pg/schema.pg";
+import { eq } from "drizzle-orm";
+import {
+  hashPassword,
+  verifyPassword,
+  deleteAllUserSessions,
+} from "auth/server";
 import {
   UpdateUserDetailsSchema,
   DeleteUserSchema,
@@ -14,9 +20,9 @@ import {
   DeleteUserActionState,
   UpdateUserPasswordActionState,
 } from "./validations";
-import { getUser, getUserAccounts, updateUserDetails } from "lib/user/server";
+import { getUser, updateUserDetails } from "lib/user/server";
 import { getTranslations } from "next-intl/server";
-import { logger } from "better-auth";
+import logger from "lib/logger";
 import {
   generateImageWithOpenAI,
   generateImageWithXAI,
@@ -38,11 +44,12 @@ export const updateUserImageAction = validatedActionWithUserManagePermission(
       const { image } = data;
 
       if (isOwnResource) {
-        await auth.api.updateUser({
-          returnHeaders: true,
-          body: { image },
-          headers: await headers(),
-        });
+        await updateUserDetails(
+          userId,
+          userSession.user.name,
+          userSession.user.email || "",
+          image,
+        );
       } else {
         await updateUserDetails(
           userId,
@@ -103,22 +110,12 @@ export const updateUserDetailsAction = validatedActionWithUserManagePermission(
 
       // this forces a session update for the current user, getting the latest data
       if (isOwnResource) {
-        if (isDifferentName || isDifferentImage) {
-          await auth.api.updateUser({
-            returnHeaders: true,
-            body: { name, ...(image && { image }) },
-            headers: await headers(),
-          });
-        }
-        if (isDifferentEmail) {
-          await auth.api.changeEmail({
-            returnHeaders: true,
-            body: { newEmail: email },
-            headers: await headers(),
-          });
+        // Directly update user details
+        if (isDifferentName || isDifferentImage || isDifferentEmail) {
+          await updateUserDetails(userId, name, email, image);
         }
       } else {
-        await updateUserDetails(userId, name, email);
+        await updateUserDetails(userId, name, email, image);
       }
 
       if (isDifferentEmail) user.email = email;
@@ -147,10 +144,7 @@ export const deleteUserAction = validatedActionWithAdminPermission(
     const t = await getTranslations("Admin.UserDelete");
     const { userId } = data;
     try {
-      await auth.api.removeUser({
-        body: { userId },
-        headers: await headers(),
-      });
+      await pgDb.delete(UserTable).where(eq(UserTable.id, userId));
     } catch (error) {
       console.error("Failed to delete user:", error);
       return {
@@ -182,7 +176,12 @@ export const updateUserPasswordAction = validatedActionWithUserManagePermission(
       isCurrentUser: isCurrentUserParam,
       currentPassword,
     } = data;
-    const { hasPassword } = await getUserAccounts(userId);
+    const [accountUser] = await pgDb
+      .select({ password: UserTable.password })
+      .from(UserTable)
+      .where(eq(UserTable.id, userId))
+      .limit(1);
+    const hasPassword = !!accountUser?.password;
 
     const isCurrentUser = isCurrentUserParam ? isOwnResource : false;
 
@@ -194,27 +193,35 @@ export const updateUserPasswordAction = validatedActionWithUserManagePermission(
     }
 
     try {
+      const [user] = await pgDb
+        .select()
+        .from(UserTable)
+        .where(eq(UserTable.id, userId))
+        .limit(1);
+      if (!user) {
+        return {
+          success: false,
+          message: t("userNotFound"),
+        };
+      }
       if (isCurrentUser) {
-        if (!currentPassword) {
+        if (
+          !currentPassword ||
+          !user.password ||
+          !(await verifyPassword(currentPassword, user.password))
+        ) {
           return {
             success: false,
             message: t("failedToUpdatePassword"),
           };
         }
-        await auth.api.changePassword({
-          body: { currentPassword, newPassword, revokeOtherSessions: true },
-          headers: await headers(),
-        });
-      } else {
-        await auth.api.setUserPassword({
-          body: { userId, newPassword },
-          headers: await headers(),
-        });
-        await auth.api.revokeUserSessions({
-          body: { userId },
-          headers: await headers(),
-        });
       }
+      const hashedPassword = await hashPassword(newPassword);
+      await pgDb
+        .update(UserTable)
+        .set({ password: hashedPassword })
+        .where(eq(UserTable.id, userId));
+      await deleteAllUserSessions(userId);
       return {
         success: true,
         message: t("passwordUpdatedSuccessfully"),

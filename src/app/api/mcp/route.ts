@@ -3,7 +3,7 @@ import { McpServerTable } from "lib/db/pg/schema.pg";
 import { NextResponse } from "next/server";
 import { saveMcpClientAction } from "./actions";
 import { canCreateMCP } from "lib/auth/permissions";
-import { logger } from "better-auth";
+import logger from "lib/logger";
 
 export async function POST(request: Request) {
   const session = await getSession();

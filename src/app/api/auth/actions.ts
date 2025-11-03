@@ -1,10 +1,9 @@
 "use server";
 
-import { auth } from "@/lib/auth/server";
+import { createUser, createSession } from "auth/server";
 import { BasicUser, UserZodSchema } from "app-types/user";
 import { userRepository } from "lib/db/repository";
 import { ActionState } from "lib/action-utils";
-import { headers } from "next/headers";
 
 export async function existsByEmailAction(email: string) {
   const exists = await userRepository.existsByEmail(email);
@@ -28,14 +27,12 @@ export async function signUpAction(data: {
     };
   }
   try {
-    const { user } = await auth.api.signUpEmail({
-      body: {
-        email: parsedData.email,
-        password: parsedData.password,
-        name: parsedData.name,
-      },
-      headers: await headers(),
+    const user = await createUser({
+      email: parsedData.email,
+      password: parsedData.password,
+      name: parsedData.name,
     });
+    await createSession(user.id);
     return {
       user,
       success: true,

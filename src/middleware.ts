@@ -1,26 +1,47 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getSessionCookie } from "better-auth/cookies";
+import { getSessionByToken } from "@/lib/auth/local-auth";
 
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-  /*
-   * Playwright starts the dev server and requires a 200 status to
-   * begin the tests, so this ensures that the tests can start
-   */
   if (pathname.startsWith("/ping")) {
     return new Response("pong", { status: 200 });
   }
 
   if (pathname === "/admin") {
-    return NextResponse.redirect(new URL("/admin/users", request.url));
+    return NextResponse.redirect(new URL("/admin/users", req.url));
   }
 
-  const sessionCookie = getSessionCookie(request);
+  const sessionToken = req.cookies.get("session_token")?.value;
 
-  if (!sessionCookie) {
-    return NextResponse.redirect(new URL("/sign-in", request.url));
+  const isAuthPage =
+    pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
+  const isPublicRoute =
+    pathname.startsWith("/export/") || pathname.startsWith("/api/auth/");
+
+  if (isAuthPage || isPublicRoute) {
+    return NextResponse.next();
   }
+
+  if (!sessionToken) {
+    return NextResponse.redirect(new URL("/sign-in", req.url));
+  }
+
+  const session = await getSessionByToken(sessionToken);
+
+  if (!session || session.expiresAt < new Date()) {
+    const response = NextResponse.redirect(new URL("/sign-in", req.url));
+    response.cookies.delete("session_token");
+    return response;
+  }
+
+  if (session.user.banned) {
+    const response = NextResponse.redirect(
+      new URL("/sign-in?error=banned", req.url),
+    );
+    return response;
+  }
+
   return NextResponse.next();
 }
 

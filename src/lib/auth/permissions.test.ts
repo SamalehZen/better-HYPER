@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mocks
-vi.mock("./auth-instance", () => ({
+vi.mock("./server", () => ({
   getSession: vi.fn(),
 }));
 
@@ -12,7 +12,7 @@ vi.mock("lib/user/utils", () => ({
 // server-only is used inside the module; stub it for tests
 vi.mock("server-only", () => ({}));
 
-const { getSession } = await import("./auth-instance");
+const { getSession } = await import("./server");
 const { getIsUserAdmin } = await import("lib/user/utils");
 
 describe("auth/permissions", () => {

@@ -1,8 +1,4 @@
-import {
-  getUser,
-  getUserAccounts,
-  getUserIdAndCheckAccess,
-} from "lib/user/server";
+import { getUser, getUserIdAndCheckAccess } from "lib/user/server";
 import { notFound } from "next/navigation";
 import { UserDetail } from "./user-detail";
 import {
@@ -20,10 +16,11 @@ export async function UserDetailContent({
 }) {
   const currentUserId = await getUserIdAndCheckAccess(userId);
 
-  const [user, userAccounts] = await Promise.all([
-    getUser(userId),
-    getUserAccounts(userId),
-  ]);
+  const user = await getUser(userId);
+  const userAccounts = {
+    hasPassword: !!user?.password,
+    oauthProviders: [] as string[],
+  };
 
   if (!user) {
     notFound();

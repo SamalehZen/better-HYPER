@@ -1,5 +1,5 @@
 import { notFound, redirect, unauthorized } from "next/navigation";
-import { getUserAccounts, getUser } from "lib/user/server";
+import { getUser } from "lib/user/server";
 import { UserDetail } from "@/components/user/user-detail/user-detail";
 import {
   UserStatsCardLoader,
@@ -25,10 +25,11 @@ export default async function UserDetailPage({ params }: PageProps) {
   if (!session) {
     redirect("/login");
   }
-  const [user, userAccountInfo] = await Promise.all([
-    getUser(id),
-    getUserAccounts(id),
-  ]);
+  const user = await getUser(id);
+  const userAccountInfo = {
+    hasPassword: !!user?.password,
+    oauthProviders: [] as string[],
+  };
 
   if (!user) {
     notFound();

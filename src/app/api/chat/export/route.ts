@@ -1,5 +1,5 @@
 import { ChatExportByThreadIdSchema } from "app-types/chat-export";
-import { getSession } from "auth/auth-instance";
+import { getSession } from "auth/server";
 import { chatExportRepository, chatRepository } from "lib/db/repository";
 
 export async function POST(req: Request) {

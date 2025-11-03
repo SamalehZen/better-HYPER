@@ -1,54 +1,20 @@
-import { z } from "zod";
-import { envBooleanSchema } from "./util";
+export type LocalSession = {
+  id: string;
+  userId: string;
+  token: string;
+  expiresAt: Date;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    image: string | null;
+    role: string;
+    banned: boolean | null;
+    banReason: string | null;
+    banExpires: Date | null;
+    preferences: any;
+  };
+};
 
-export const SocialAuthenticationProviderSchema = z.enum([
-  "github",
-  "google",
-  "microsoft",
-]);
-
-export type SocialAuthenticationProvider = z.infer<
-  typeof SocialAuthenticationProviderSchema
->;
-
-export const GitHubConfigSchema = z.object({
-  clientId: z.string().min(1),
-  clientSecret: z.string().min(1),
-  disableSignUp: z.boolean().optional(),
-});
-
-export const GoogleConfigSchema = z.object({
-  clientId: z.string().min(1),
-  clientSecret: z.string().min(1),
-  disableSignUp: z.boolean().optional(),
-  prompt: z.literal("select_account").optional(),
-});
-
-export const MicrosoftConfigSchema = z.object({
-  clientId: z.string().min(1),
-  clientSecret: z.string().min(1),
-  tenantId: z.string().default("common"),
-  disableSignUp: z.boolean().optional(),
-  prompt: z.literal("select_account").optional(),
-});
-
-export const SocialAuthenticationConfigSchema = z.object({
-  github: GitHubConfigSchema.optional(),
-  google: GoogleConfigSchema.optional(),
-  microsoft: MicrosoftConfigSchema.optional(),
-});
-
-export const AuthConfigSchema = z.object({
-  emailAndPasswordEnabled: envBooleanSchema.default(true),
-  signUpEnabled: envBooleanSchema.default(true),
-  socialAuthenticationProviders: SocialAuthenticationConfigSchema,
-});
-
-export type GitHubConfig = z.infer<typeof GitHubConfigSchema>;
-export type GoogleConfig = z.infer<typeof GoogleConfigSchema>;
-export type MicrosoftConfig = z.infer<typeof MicrosoftConfigSchema>;
-export type SocialAuthenticationConfig = z.infer<
-  typeof SocialAuthenticationConfigSchema
->;
-
-export type AuthConfig = z.infer<typeof AuthConfigSchema>;
+export type UserSession = LocalSession;
+export type UserSessionUser = LocalSession["user"];

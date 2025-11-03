@@ -1,8 +1,10 @@
 "use server";
 
 import { validatedActionWithAdminPermission } from "lib/action-utils";
-import { headers } from "next/headers";
-import { auth } from "auth/server";
+import { pgDb } from "lib/db/pg/db.pg";
+import { UserTable } from "lib/db/pg/schema.pg";
+import { eq } from "drizzle-orm";
+import { deleteAllUserSessions } from "auth/server";
 import { DEFAULT_USER_ROLE, userRolesInfo } from "app-types/roles";
 import {
   UpdateUserRoleSchema,
@@ -28,14 +30,8 @@ export const updateUserRolesAction = validatedActionWithAdminPermission(
         message: t("cannotUpdateOwnRole"),
       };
     }
-    await auth.api.setRole({
-      body: { userId, role },
-      headers: await headers(),
-    });
-    await auth.api.revokeUserSessions({
-      body: { userId },
-      headers: await headers(),
-    });
+    await pgDb.update(UserTable).set({ role }).where(eq(UserTable.id, userId));
+    await deleteAllUserSessions(userId);
     const user = await getUser(userId);
     if (!user) {
       return {
@@ -72,24 +68,22 @@ export const updateUserBanStatusAction = validatedActionWithAdminPermission(
     }
     try {
       if (!banned) {
-        await auth.api.banUser({
-          body: {
-            userId,
+        await pgDb
+          .update(UserTable)
+          .set({
+            banned: true,
             banReason:
               banReason ||
               (await getTranslations("User.Profile.common"))("bannedByAdmin"),
-          },
-          headers: await headers(),
-        });
-        await auth.api.revokeUserSessions({
-          body: { userId },
-          headers: await headers(),
-        });
+            banExpires: null,
+          })
+          .where(eq(UserTable.id, userId));
+        await deleteAllUserSessions(userId);
       } else {
-        await auth.api.unbanUser({
-          body: { userId },
-          headers: await headers(),
-        });
+        await pgDb
+          .update(UserTable)
+          .set({ banned: false, banReason: null, banExpires: null })
+          .where(eq(UserTable.id, userId));
       }
       const user = await getUser(userId);
       if (!user) {

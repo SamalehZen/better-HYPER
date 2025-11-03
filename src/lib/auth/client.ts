@@ -1,24 +1,19 @@
 "use client";
 
-import { createAuthClient } from "better-auth/react"; // make sure to import from better-auth/react
-import { adminClient, inferAdditionalFields } from "better-auth/client/plugins";
+import useSWR from "swr";
 
-import { DEFAULT_USER_ROLE, USER_ROLES } from "app-types/roles";
-import { ac, admin, editor, user } from "./roles";
-import type { auth } from "./auth-instance";
+const fetcher = async (url: string) => {
+  const res = await fetch(url, { credentials: "same-origin" });
+  if (!res.ok) return { user: null };
+  return res.json();
+};
 
-export const authClient = createAuthClient({
-  plugins: [
-    inferAdditionalFields<typeof auth>(),
-    adminClient({
-      defaultRole: DEFAULT_USER_ROLE,
-      adminRoles: [USER_ROLES.ADMIN],
-      ac,
-      roles: {
-        admin,
-        editor,
-        user,
-      },
-    }),
-  ],
-});
+export const authClient = {
+  useSession() {
+    const { data, isLoading } = useSWR<{ user: any }>(
+      "/api/auth/session",
+      fetcher,
+    );
+    return { data, isPending: isLoading } as const;
+  },
+};

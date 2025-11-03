@@ -1,5 +1,5 @@
 import "server-only";
-import { getSession } from "./auth-instance";
+import { getSession } from "./server";
 import { getIsUserAdmin } from "lib/user/utils";
 import { admin, editor, user as userRole } from "./roles";
 import type { BetterAuthRole } from "./types";

@@ -33,8 +33,8 @@ vi.mock("next/navigation", () => ({
   notFound: vi.fn(),
 }));
 
-const { auth, getSession } = await import("auth/server");
-const { headers } = await import("next/headers");
+const { getSession } = await import("auth/server");
+
 const { notFound } = await import("next/navigation");
 import {
   getUserAccounts,
@@ -48,74 +48,6 @@ import {
 describe("User Server", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  describe("getUserAccounts - Account Type Detection", () => {
-    beforeEach(() => {
-      vi.mocked(getSession).mockResolvedValue({
-        user: { id: "user-1" },
-      } as any);
-      vi.mocked(headers).mockResolvedValue(new Headers());
-    });
-
-    it("should correctly identify password vs OAuth accounts", async () => {
-      const mockAccounts = [
-        { providerId: "credential", id: "1" },
-        { providerId: "google", id: "2" },
-        { providerId: "github", id: "3" },
-      ];
-      vi.mocked(auth.api.listUserAccounts).mockResolvedValue(
-        mockAccounts as any,
-      );
-
-      const result = await getUserAccounts("user-1");
-
-      expect(result.hasPassword).toBe(true);
-      expect(result.oauthProviders).toEqual(["google", "github"]);
-    });
-
-    it("should handle OAuth-only accounts", async () => {
-      const mockAccounts = [
-        { providerId: "google", id: "1" },
-        { providerId: "github", id: "2" },
-      ];
-      vi.mocked(auth.api.listUserAccounts).mockResolvedValue(
-        mockAccounts as any,
-      );
-
-      const result = await getUserAccounts("user-1");
-
-      expect(result.hasPassword).toBe(false);
-      expect(result.oauthProviders).toEqual(["google", "github"]);
-    });
-
-    it("should handle password-only accounts", async () => {
-      const mockAccounts = [{ providerId: "credential", id: "1" }];
-      vi.mocked(auth.api.listUserAccounts).mockResolvedValue(
-        mockAccounts as any,
-      );
-
-      const result = await getUserAccounts("user-1");
-
-      expect(result.hasPassword).toBe(true);
-      expect(result.oauthProviders).toEqual([]);
-    });
-
-    it("should filter out credential provider from OAuth list", async () => {
-      const mockAccounts = [
-        { providerId: "credential", id: "1" },
-        { providerId: "credential", id: "2" }, // multiple credential accounts
-        { providerId: "google", id: "3" },
-      ];
-      vi.mocked(auth.api.listUserAccounts).mockResolvedValue(
-        mockAccounts as any,
-      );
-
-      const result = await getUserAccounts("user-1");
-
-      expect(result.hasPassword).toBe(true);
-      expect(result.oauthProviders).toEqual(["google"]); // credential filtered out
-    });
   });
 
   describe("getUserIdAndCheckAccess - Access Control Logic", () => {

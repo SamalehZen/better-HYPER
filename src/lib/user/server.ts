@@ -1,11 +1,13 @@
 "use server";
 
 import { BasicUserWithLastLogin, UserPreferences } from "app-types/user";
-import { auth, getSession } from "auth/server";
-import { Session } from "better-auth";
+import { getSession } from "auth/server";
 import { userRepository } from "lib/db/repository";
-import { headers } from "next/headers";
+
 import { notFound } from "next/navigation";
+import { pgDb } from "lib/db/pg/db.pg";
+import { SessionTable } from "lib/db/pg/schema.pg";
+import { eq, desc } from "drizzle-orm";
 import { customModelProvider } from "@/lib/ai/models";
 
 // Helper function to get model provider from model name
@@ -33,37 +35,16 @@ export async function getUser(
 }
 
 /**
- * Get user accounts
- * We can only list accounts for the current user as a non-admin user
- * We can list accounts for any user as an admin user
+ * List user sessions using local auth sessions
  */
-export async function getUserAccounts(userId?: string) {
+export async function getUserSessions(userId?: string) {
   const resolvedUserId = await getUserIdAndCheckAccess(userId);
-  const accounts = await auth.api.listUserAccounts({
-    params: { userId: resolvedUserId },
-    headers: await headers(),
-  });
-  const hasPassword = accounts.some(
-    (account) => account.providerId === "credential",
-  );
-  const oauthProviders = accounts
-    .filter((account) => account.providerId !== "credential")
-    .map((account) => account.providerId);
-  return { accounts, hasPassword, oauthProviders };
-}
-
-/**
- * List user sessions
- * We use the better-auth API to list the sessions
- * We can only list sessions for the current user as a non-admin user
- * We can list sessions for any user as an admin user
- */
-export async function getUserSessions(userId?: string): Promise<Session[]> {
-  const resolvedUserId = await getUserIdAndCheckAccess(userId);
-  return await auth.api.listSessions({
-    params: { userId: resolvedUserId },
-    headers: await headers(),
-  });
+  const rows = await pgDb
+    .select()
+    .from(SessionTable)
+    .where(eq(SessionTable.userId, resolvedUserId))
+    .orderBy(desc(SessionTable.createdAt));
+  return rows;
 }
 
 /**
