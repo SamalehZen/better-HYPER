@@ -11,7 +11,7 @@ export async function existsByEmailAction(email: string) {
 }
 
 type SignUpActionResponse = ActionState & {
-  user?: BasicUser;
+  user?: Partial<BasicUser>;
 };
 
 export async function signUpAction(data: {
