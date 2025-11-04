@@ -76,12 +76,14 @@ const PurePreviewMessage = ({
             const isLastPart = index === partsForDisplay.length - 1;
 
             if (part.type === "reasoning") {
+              const isStreamingReasoning =
+                isLastPart && isLastMessage && isLoading;
               return (
                 <ReasoningPart
                   key={key}
-                  readonly={readonly}
-                  reasoningText={part.text}
-                  isThinking={isLastPart && isLastMessage && isLoading}
+                  part={part}
+                  sectionKey={`${message.id}-${index}`}
+                  isStreaming={isStreamingReasoning}
                 />
               );
             }

@@ -10,6 +10,7 @@ import {
   Loader2,
   PaperclipIcon,
   PlusIcon,
+  Sparkles,
   Square,
   XIcon,
 } from "lucide-react";
@@ -106,6 +107,7 @@ export default function PromptInput({
     threadMentions,
     threadFiles,
     threadImageToolModel,
+    reasoning,
     appStoreMutate,
   ] = appStore(
     useShallow((state) => [
@@ -113,6 +115,7 @@ export default function PromptInput({
       state.threadMentions,
       state.threadFiles,
       state.threadImageToolModel,
+      state.reasoning,
       state.mutate,
     ]),
   );
@@ -149,6 +152,24 @@ export default function PromptInput({
   const chatModel = useMemo(() => {
     return model ?? globalModel;
   }, [model, globalModel]);
+
+  const showReasoningToggle = useMemo(() => {
+    return (
+      chatModel?.provider === "google" &&
+      chatModel.model?.startsWith("gemini-2.5-flash")
+    );
+  }, [chatModel]);
+
+  const reasoningEnabled = reasoning.googleThinking;
+
+  const toggleReasoning = useCallback(() => {
+    appStoreMutate((prev) => ({
+      reasoning: {
+        ...prev.reasoning,
+        googleThinking: !prev.reasoning.googleThinking,
+      },
+    }));
+  }, [appStoreMutate]);
 
   const editorRef = useRef<Editor | null>(null);
 
@@ -582,6 +603,35 @@ export default function PromptInput({
                   ))}
 
                 <div className="flex-1" />
+
+                {showReasoningToggle && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={reasoningEnabled ? "default" : "ghost"}
+                        size="sm"
+                        className={cn(
+                          "rounded-full px-3 mr-1 flex items-center gap-1",
+                          reasoningEnabled
+                            ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                            : "hover:bg-input!",
+                        )}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          toggleReasoning();
+                        }}
+                      >
+                        <Sparkles className="size-3" />
+                        <span className="text-xs font-medium">Reasoning</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {reasoningEnabled
+                        ? "Disable Gemini reasoning mode"
+                        : "Enable Gemini reasoning mode"}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
 
                 <SelectModel onSelect={setChatModel} currentModel={chatModel}>
                   <Button

@@ -108,6 +108,17 @@ export const chatApiSchemaRequestBodySchema = z.object({
   allowedMcpServers: z.record(z.string(), AllowedMCPServerZodSchema).optional(),
   allowedAppDefaultToolkit: z.array(z.string()).optional(),
   attachments: z.array(ChatAttachmentSchema).optional(),
+  reasoning: z
+    .object({
+      provider: z.literal("google"),
+      thinkingConfig: z
+        .object({
+          includeThoughts: z.boolean().optional(),
+          thinkingBudget: z.number().nonnegative().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
 });
 
 export type ChatApiSchemaRequestBody = z.infer<

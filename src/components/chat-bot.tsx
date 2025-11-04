@@ -95,6 +95,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
     threadMentions,
     pendingThreadMention,
     threadImageToolModel,
+    reasoning,
   ] = appStore(
     useShallow((state) => [
       state.mutate,
@@ -106,6 +107,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
       state.threadMentions,
       state.pendingThreadMention,
       state.threadImageToolModel,
+      state.reasoning,
     ]),
   );
 
@@ -194,11 +196,19 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
           (p) => (p as any)?.type === "file",
         );
 
+        const effectiveChatModel =
+          (body as { model?: ChatModel })?.model ?? latestRef.current.model;
+
+        const shouldIncludeReasoning = Boolean(
+          latestRef.current.reasoning?.googleThinking &&
+            effectiveChatModel?.provider === "google" &&
+            effectiveChatModel.model?.startsWith("gemini-2.5-flash"),
+        );
+
         const requestBody: ChatApiSchemaRequestBody = {
           ...body,
           id,
-          chatModel:
-            (body as { model: ChatModel })?.model ?? latestRef.current.model,
+          chatModel: effectiveChatModel,
           toolChoice: latestRef.current.toolChoice,
           allowedAppDefaultToolkit:
             latestRef.current.mentions?.length || hasFilePart
@@ -213,6 +223,14 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
             model: latestRef.current.threadImageToolModel[threadId],
           },
           attachments,
+          reasoning: shouldIncludeReasoning
+            ? {
+                provider: "google",
+                thinkingConfig: {
+                  includeThoughts: true,
+                },
+              }
+            : undefined,
         };
         return { body: requestBody };
       },
@@ -244,6 +262,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
     threadId,
     mentions: threadMentions[threadId],
     threadImageToolModel,
+    reasoning,
   });
 
   const isLoading = useMemo(

@@ -75,6 +75,7 @@ export async function POST(request: Request) {
       imageTool,
       mentions = [],
       attachments = [],
+      reasoning,
     } = chatApiSchemaRequestBodySchema.parse(json);
 
     const model = customModelProvider.getModel(chatModel);
@@ -322,6 +323,28 @@ export async function POST(request: Request) {
         }
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
+        const providerOptions =
+          reasoning?.provider === "google"
+            ? (() => {
+                const thinkingConfig: {
+                  includeThoughts?: boolean;
+                  thinkingBudget?: number;
+                } = {
+                  includeThoughts:
+                    reasoning.thinkingConfig?.includeThoughts ?? true,
+                };
+                if (reasoning.thinkingConfig?.thinkingBudget !== undefined) {
+                  thinkingConfig.thinkingBudget =
+                    reasoning.thinkingConfig.thinkingBudget;
+                }
+                return {
+                  google: {
+                    thinkingConfig,
+                  },
+                };
+              })()
+            : undefined;
+
         const result = streamText({
           model,
           system: systemPrompt,
@@ -332,6 +355,7 @@ export async function POST(request: Request) {
           stopWhen: stepCountIs(10),
           toolChoice: "auto",
           abortSignal: request.signal,
+          providerOptions,
         });
         result.consumeStream();
         dataStream.merge(

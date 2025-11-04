@@ -64,6 +64,9 @@ export interface AppState {
       providerOptions?: Record<string, any>;
     };
   };
+  reasoning: {
+    googleThinking: boolean;
+  };
   pendingThreadMention?: ChatMention;
 }
 
@@ -107,6 +110,9 @@ const initialState: AppState = {
       },
     },
   },
+  reasoning: {
+    googleThinking: false,
+  },
   pendingThreadMention: undefined,
 };
 
@@ -138,6 +144,7 @@ export const appStore = create<AppState & AppDispatch>()(
           ...state.voiceChat,
           isOpen: false,
         },
+        reasoning: state.reasoning || initialState.reasoning,
       }),
     },
   ),
