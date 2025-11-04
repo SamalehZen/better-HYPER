@@ -29,7 +29,6 @@ import { MessageEditor } from "./message-editor";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useCopy } from "@/hooks/use-copy";
 
-import { AnimatePresence, motion } from "framer-motion";
 import { SelectModel } from "./select-model";
 import {
   deleteMessageAction,
