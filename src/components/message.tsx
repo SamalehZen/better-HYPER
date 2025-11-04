@@ -76,8 +76,9 @@ const PurePreviewMessage = ({
             const isLastPart = index === partsForDisplay.length - 1;
 
             if (part.type === "reasoning") {
-              const isStreamingReasoning =
-                isLastPart && isLastMessage && isLoading;
+              const isStreamingReasoning = Boolean(
+                isLastPart && isLastMessage && isLoading,
+              );
               return (
                 <ReasoningPart
                   key={key}
