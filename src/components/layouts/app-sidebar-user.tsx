@@ -31,7 +31,6 @@ import { useTheme } from "next-themes";
 import { appStore } from "@/app/store";
 import { BASE_THEMES, COOKIE_KEY_LOCALE, SUPPORTED_LOCALES } from "lib/const";
 import { capitalizeFirstLetter, cn, fetcher } from "lib/utils";
-import { authClient } from "auth/client";
 import { useTranslations } from "next-intl";
 import useSWR from "swr";
 import { getLocaleAction } from "@/i18n/get-locale";
@@ -46,19 +45,23 @@ import { Skeleton } from "ui/skeleton";
 export function AppSidebarUserInner(props: {
   user?: Partial<BasicUser>;
 }) {
-  const { data: user } = useSWR<BasicUser>(`/api/user/details`, fetcher, {
-    fallbackData: props.user,
-    suspense: true,
-    revalidateOnMount: false,
-    revalidateOnFocus: false,
-    shouldRetryOnError: false,
-    refreshInterval: 1000 * 60 * 10,
-  });
+  const { data: user } = useSWR<Partial<BasicUser>>(
+    `/api/user/details`,
+    fetcher,
+    {
+      fallbackData: props.user,
+      suspense: true,
+      revalidateOnMount: false,
+      revalidateOnFocus: false,
+      shouldRetryOnError: false,
+      refreshInterval: 1000 * 60 * 10,
+    },
+  );
   const appStoreMutate = appStore((state) => state.mutate);
   const t = useTranslations("Layout");
 
   const logout = () => {
-    authClient.signOut().finally(() => {
+    fetch("/api/auth/signout", { method: "POST" }).finally(() => {
       window.location.href = "/sign-in";
     });
   };
