@@ -2,8 +2,6 @@ import { pgDb } from "../../src/lib/db/pg/db.pg";
 import {
   UserTable,
   SessionTable,
-  AccountTable,
-  VerificationTable,
   ChatThreadTable,
   ChatMessageTable,
   AgentTable,
@@ -49,13 +47,7 @@ export async function clearAllUsers() {
   // 8. Clear sessions (depends on users)
   await pgDb.delete(SessionTable);
 
-  // 9. Clear accounts (depends on users)
-  await pgDb.delete(AccountTable);
-
-  // 10. Clear verifications (depends on users)
-  await pgDb.delete(VerificationTable);
-
-  // 11. Finally clear users
+  // 9. Finally clear users
   await pgDb.delete(UserTable);
 
   console.log("✅ All users and related data cleared");

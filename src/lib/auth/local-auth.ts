@@ -4,7 +4,7 @@ import { hash as bcryptHash, compare as bcryptCompare } from "bcrypt-ts";
 import { cookies } from "next/headers";
 import { pgDb } from "lib/db/pg/db.pg";
 import { UserTable, SessionTable } from "lib/db/pg/schema.pg";
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { userRepository } from "lib/db/repository";
 
@@ -31,7 +31,7 @@ const SESSION_EXPIRY_DAYS = 7;
 const SALT_ROUNDS = 10;
 
 export async function hashPassword(password: string): Promise<string> {
-  return bcryptHash(password, { cost: SALT_ROUNDS });
+  return bcryptHash(password, SALT_ROUNDS);
 }
 
 export async function verifyPassword(
@@ -63,7 +63,7 @@ export async function createSession(
     userAgent: userAgent || null,
   });
 
-  setSessionCookie(token);
+  await setSessionCookie(token);
   return token;
 }
 
@@ -112,7 +112,8 @@ export async function getSessionByToken(
 }
 
 export async function getSession(): Promise<Session | null> {
-  const token = cookies().get(SESSION_COOKIE_NAME)?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
   return await getSessionByToken(token);
 }
@@ -130,8 +131,8 @@ export async function createUser(data: {
   email: string;
   password: string;
 }): Promise<{ id: string; email: string; name: string }> {
-  const existing = await userRepository.getUserByEmail(data.email);
-  if (existing) {
+  const exists = await userRepository.existsByEmail(data.email);
+  if (exists) {
     throw new Error("Email already in use");
   }
 
@@ -181,11 +182,12 @@ export async function signIn(
 }
 
 export async function signOut(): Promise<void> {
-  const token = cookies().get(SESSION_COOKIE_NAME)?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (token) {
     await deleteSession(token);
   }
-  deleteSessionCookie();
+  await deleteSessionCookie();
 }
 
 let isFirstUserCache: boolean | null = null;
@@ -202,10 +204,11 @@ export async function getIsFirstUser(): Promise<boolean> {
   }
 }
 
-function setSessionCookie(token: string): void {
+async function setSessionCookie(token: string): Promise<void> {
+  const cookieStore = await cookies();
   const isProd =
     process.env.NODE_ENV === "production" && process.env.NO_HTTPS !== "1";
-  cookies().set(SESSION_COOKIE_NAME, token, {
+  cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: isProd,
@@ -214,8 +217,9 @@ function setSessionCookie(token: string): void {
   });
 }
 
-function deleteSessionCookie(): void {
-  cookies().delete(SESSION_COOKIE_NAME);
+async function deleteSessionCookie(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.delete(SESSION_COOKIE_NAME);
 }
 
 export { setSessionCookie, deleteSessionCookie };
